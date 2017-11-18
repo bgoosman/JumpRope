@@ -1,1 +1,6 @@
-ofxVideoBuffer
+ofxDspChain
+ofxMaxim
+ofxOsc
+ofxPlaymodes-Joshua
+ofxUI
+ofxXmlSettings

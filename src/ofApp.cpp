@@ -2,89 +2,93 @@
 
 //--------------------------------------------------------------
 void ofApp::setup(){
-    ofSetFrameRate(60);
-    ofSetWindowShape(WIDTH*2, HEIGHT+40);
-    videoGrabber.setDesiredFrameRate(60);
-    videoGrabber.initGrabber(WIDTH,HEIGHT);
-    record = false;
-    playback = false;
+    ofSetVerticalSync(true);
+    ofEnableAlphaBlending();
+    
+    // Video
+    playModes.setup();
+    
+    // Audio
+    sampleRate = 44100;
+    bufferSize = 512;
+    grainPlayer.setup();
+    mixer.addInputFrom(&grainPlayer);
+    
+    // SoundStream
+    std::cout << soundStream.getDeviceList();
+    soundStream.setup(this, 2, 2, sampleRate, bufferSize, 4);
+    soundStream.setOutput(this);
+    
+    // GUI
+    gui = new ofxUICanvas();
+    gui->setFont("GUI/Fett.ttf");
+    gui->addLabel("granular synthesis");
+    gui->addSpacer();
+    gui->addSlider("Speed", -4.0, 4.0, &grainPlayer.speed);
+    gui->addSlider("Pitch", 0.0, 10.0, &grainPlayer.pitch);
+    gui->addSlider("GrainSize", 0.025, 0.45, &grainPlayer.grainSize);
+    gui->addSlider("Overlaps", 1, 5, &grainPlayer.overlaps);
+    gui->addSpacer();
+    gui->addToggle("Record Input", true);
+    gui->addToggle("Set Position", &grainPlayer.bSetPosition);
+    gui->addSlider("Position", 0.0, 1.0, 1.0);
+    gui->addSlider("Volume", 0.0, 1.0, &grainPlayer.volume);
+    gui->autoSizeToFitWidgets();
+    gui->loadSettings("GUI/guiSettings.xml");
+    ofAddListener(gui->newGUIEvent,this, &ofApp::guiEvent);
 }
 
 //--------------------------------------------------------------
-void ofApp::update(){
+void ofApp::update() {
     ofSetWindowTitle(ofToString(ofGetFrameRate()));
     
-    videoGrabber.update();
+    playModes.update();
+    grainPlayer.updatePlayHead();
     
-    if (record)
-    {
-        buffer.getNewImage(videoGrabber.getPixelsRef(), OF_IMAGE_COLOR);
-    }
-
-    if (buffer.isFinished())
-    {
-        playback = false;
-    }
-    
-    // Update the buffer
-    if (!buffer.isEmpty())
-    {
-        buffer.update();
+    if (!grainPlayer.bRecLiveInput && !grainPlayer.bSetPosition) {
+        playModes.setDelay(grainPlayer.ps->getNormalisedPosition());
     }
 }
 
 //--------------------------------------------------------------
-void ofApp::draw(){
-    ofBackground(50);
+void ofApp::draw() {
     ofSetColor(255);
-    
-    videoGrabber.draw(0,0);
-    
-    if (!buffer.isEmpty())
-    {
-        buffer.draw(WIDTH, 0, WIDTH, HEIGHT);
+    playModes.draw();
+    grainPlayer.draw();
+    playModes.drawData();
+}
+
+//--------------------------------------------------------------
+void ofApp::audioIn(float * input, int bufferSize, int nChannels) {
+    grainPlayer.audioReceived(input,bufferSize,nChannels);
+}
+
+//--------------------------------------------------------------
+void ofApp::audioOut(float * output, int bufferSize, int nChannels) {
+    mixer.audioRequested(output, bufferSize, nChannels);
+}
+
+//--------------------------------------------------------------
+void ofApp::guiEvent(ofxUIEventArgs &e){
+    std::string name = e.widget->getName();
+    if (name == "Position") {
+        ofxUISlider* slider = (ofxUISlider *) e.widget;
+        grainPlayer.playHead = slider->getScaledValue();
+        playModes.setDelay(slider->getScaledValue());
+    } else if (name == "Record Input") {
+        ofxUIToggle* toggle = (ofxUIToggle *) e.widget;
+        grainPlayer.bRecLiveInput = toggle->getValue();
+        if (toggle->getValue()) {
+            //playModes.vHeader.setInPct(grainPlayer.getRecordPostion());
+            playModes.vBuffer.resume();
+        } else {
+            playModes.vBuffer.stop();
+        }
     }
-    
-    if(record)
-    {
-        ofSetColor(255, 0, 0);
-        ofCircle(10, 12, 5);
-    }
-    
-    if (playback)
-    {
-        ofSetColor(0, 255, 0);
-        ofCircle(WIDTH+10, 12, 5);
-    }
-    
-    // Info
-    ofDrawBitmapStringHighlight("Recorded Frames: " +ofToString(buffer.getNumberOfFrames()), 10,250);
-    ofDrawBitmapStringHighlight("Current Frame Number: "+ofToString(buffer.getCurrentFrameNumber()), WIDTH+10,250);
 }
 
 //--------------------------------------------------------------
 void ofApp::keyPressed(int key){
-    switch (key) {
-        case 'r':
-            record = !record;
-            break;
-        case 'p':
-            playback = true;
-            buffer.reset();
-            buffer.start();
-            break;
-        case 'c':
-            buffer.clear();
-            break;
-        case 'f':
-            buffer.setFade(false);
-            break;
-        case 'F':
-            buffer.setFade(true);
-            break;
-        default:
-            break;
-    }
 }
 
 //--------------------------------------------------------------

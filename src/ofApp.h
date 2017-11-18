@@ -1,10 +1,9 @@
 #pragma once
 
 #include "ofMain.h"
-#include "ofxVideoBuffers.h"
-
-#define WIDTH 320
-#define HEIGHT 240
+#include "ofxUI.h"
+#include "PlayModes.h"
+#include "GrainPlayer.h"
 
 class ofApp : public ofBaseApp{
 
@@ -25,8 +24,18 @@ class ofApp : public ofBaseApp{
 		void dragEvent(ofDragInfo dragInfo);
 		void gotMessage(ofMessage msg);
     
-        ofVideoGrabber videoGrabber;
-        ofxVideoBuffers buffer;
-        bool record;
-        bool playback;
+        PlayModes playModes;
+        GrainPlayer grainPlayer;
+    
+        // Audio
+        void audioIn(float * input, int bufferSize, int nChannels);
+        void audioOut(float * output, int bufferSize, int nChannels);
+        int sampleRate;
+        int bufferSize;
+        ofSoundStream soundStream;
+        ofSoundMixer mixer;
+    
+        // GUI
+        ofxUICanvas *gui;
+        void guiEvent(ofxUIEventArgs &e);
 };
