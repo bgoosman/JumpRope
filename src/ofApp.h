@@ -1,9 +1,7 @@
 #pragma once
 
 #include "ofMain.h"
-#include "ofxUI.h"
 #include "PlayModes.h"
-#include "GrainPlayer.h"
 
 class ofApp : public ofBaseApp{
 
@@ -25,17 +23,4 @@ class ofApp : public ofBaseApp{
 		void gotMessage(ofMessage msg);
     
         PlayModes playModes;
-        GrainPlayer grainPlayer;
-    
-        // Audio
-        void audioIn(float * input, int bufferSize, int nChannels);
-        void audioOut(float * output, int bufferSize, int nChannels);
-        int sampleRate;
-        int bufferSize;
-        ofSoundStream soundStream;
-        ofSoundMixer mixer;
-    
-        // GUI
-        ofxUICanvas *gui;
-        void guiEvent(ofxUIEventArgs &e);
 };

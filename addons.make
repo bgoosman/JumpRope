@@ -1,6 +1,2 @@
-ofxDspChain
-ofxMaxim
 ofxOsc
-ofxPlaymodes-Joshua
-ofxUI
-ofxXmlSettings
+ofxPlaymodes

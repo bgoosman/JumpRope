@@ -25,20 +25,20 @@ public:
     void setup();
     void update();
     void draw();
-    void drawData();
-    
     void setFps(int _fps);
     void setDelay(float _delay);
+    void setDelayPercent(float delay);
+    void reverse();
+    void togglePlay();
+    bool isPaused();
+    void beginJumpRope();
 
-    ofxPm::VideoGrabber vGrabber;
-    ofxPm::VideoBuffer vBuffer;
-    ofxPm::VideoHeader vHeader;
-    ofxPm::BasicVideoRenderer vRenderer;
-    ofxPm::VideoRate vRate;
-
-    
+    ofxPm::VideoGrabber grabber;
+    ofxPm::VideoBuffer buffer;
+    ofxPm::VideoHeader header;
+    ofxPm::BasicVideoRenderer renderer;
+    ofxPm::VideoRate rate;
     int fps;
     int delay;
-
-
+    float speed;
 };
