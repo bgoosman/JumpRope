@@ -2,6 +2,7 @@
 
 #include "ofMain.h"
 #include "PlayModes.h"
+#include "ofxMidiFighterTwister.h"
 
 class ofApp : public ofBaseApp{
 
@@ -23,4 +24,9 @@ class ofApp : public ofBaseApp{
 		void gotMessage(ofMessage msg);
     
         PlayModes playModes;
+        ofxMidiFighterTwister twister;
+        void setupMidiFighterTwister();
+        void onEncoderUpdate(ofxMidiFighterTwister::EncoderEventArgs &);
+        void onPushSwitchUpdate(ofxMidiFighterTwister::PushSwitchEventArgs &);
+        void onSideButtonPressed(ofxMidiFighterTwister::SideButtonEventArgs &);
 };

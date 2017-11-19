@@ -5,6 +5,33 @@ void ofApp::setup(){
     ofSetVerticalSync(true);
     ofEnableAlphaBlending();
     playModes.setup();
+    setupMidiFighterTwister();
+}
+
+void ofApp::setupMidiFighterTwister() {
+    twister.setup();
+    ofAddListener(twister.eventEncoder, this, &ofApp::onEncoderUpdate);
+    ofAddListener(twister.eventPushSwitch, this, &ofApp::onPushSwitchUpdate);
+    ofAddListener(twister.eventSideButton, this, &ofApp::onSideButtonPressed);
+}
+
+void ofApp::onEncoderUpdate(ofxMidiFighterTwister::EncoderEventArgs& a){
+    std::cout << "Encoder '" << a.ID << "' Event! val: " << a.value << std::endl;
+    if (a.ID == 0) {
+        auto delayPercent = ofMap(a.value, 0, 127, 0, 1);
+        playModes.setDelayPercent(delayPercent);
+    }
+}
+
+void ofApp::onPushSwitchUpdate(ofxMidiFighterTwister::PushSwitchEventArgs& a){
+    std::cout << "PushSwitch '" << a.ID << "' Event! val: " << a.value << std::endl;
+    if (a.ID == 0 && a.value == 127) {
+        playModes.jumpRope(a.ID);
+    }
+}
+
+void ofApp::onSideButtonPressed(ofxMidiFighterTwister::SideButtonEventArgs & a){
+    std::cout << "Side Button Pressed" << std::endl;
 }
 
 //--------------------------------------------------------------
@@ -31,13 +58,13 @@ void ofApp::keyReleased(int key) {
         playModes.setDelayPercent(0);
         playModes.togglePlay();
     } else if (key == 'j' && playModes.isPaused()) {
-        playModes.beginJumpRope();
+        playModes.jumpRope(0);
     }
 }
 
 //--------------------------------------------------------------
 void ofApp::mouseMoved(int x, int y ) {
-    if (playModes.isPaused()) {
+    if (playModes.isPaused() && false) {
         playModes.setDelayPercent(float(x)/float(ofGetWidth()));
     }
 }

@@ -3,6 +3,7 @@
 //  
 //
 //  Created by Joshua Batty on 5/05/14.
+//  Modified by Benjamin Goosman in Fall 2018
 //
 //
 
@@ -15,12 +16,12 @@
 #include "VideoRenderer.h"
 #include "VideoRate.h"
 #include "BasicVideoRenderer.h"
+#include "ease.h"
 
+#define NUM_FRAMES 126
+#define NUM_BUFFERS 1
 
-#define NUM_FRAMES 400
-
-class PlayModes{
-    
+class PlayModes {
 public:
     void setup();
     void update();
@@ -31,14 +32,18 @@ public:
     void reverse();
     void togglePlay();
     bool isPaused();
-    void beginJumpRope();
+    void jumpRope(int buffer);
+    ofxPm::VideoBuffer& getCurrentBuffer();
+    ofxPm::VideoHeader& getCurrentHeader();
 
     ofxPm::VideoGrabber grabber;
-    ofxPm::VideoBuffer buffer;
-    ofxPm::VideoHeader header;
+    ofxPm::VideoBuffer buffers[NUM_BUFFERS];
+    ofxPm::VideoHeader headers[NUM_BUFFERS];
     ofxPm::BasicVideoRenderer renderer;
     ofxPm::VideoRate rate;
     int fps;
     int delay;
+    int currentBuffer;
     float speed;
+    ease* easings[NUM_BUFFERS];
 };

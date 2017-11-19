@@ -1,2 +1,5 @@
+ofxEasing
+ofxMidi
+ofxMidiFighterTwister
 ofxOsc
 ofxPlaymodes
