@@ -9,8 +9,8 @@ typedef Poco::Timestamp::TimeDiff TimeDiff;
 
 class ease {
 public:
-    ease(TimeDiff startTime, TimeDiff forwardDuration, float startValue, float targetValue, ofxeasing::function easingFunction) :
-        startTime(startTime),
+    ease(TimeDiff forwardDuration, float startValue, float targetValue, ofxeasing::function easingFunction) :
+        startTime(-1),
         forwardDuration(forwardDuration),
         backwardDuration(-1),
         isGoingBackward(false),
@@ -18,8 +18,8 @@ public:
         targetValue(targetValue),
         easingFunction(easingFunction) {}
     
-    ease(TimeDiff startTime, TimeDiff forwardDuration, TimeDiff backwardDuration, float startValue, float targetValue, ofxeasing::function easingFunction) :
-         startTime(startTime),
+    ease(TimeDiff forwardDuration, TimeDiff backwardDuration, float startValue, float targetValue, ofxeasing::function easingFunction) :
+         startTime(-1),
          forwardDuration(forwardDuration),
          backwardDuration(backwardDuration),
          isGoingBackward(false),
@@ -27,24 +27,36 @@ public:
          targetValue(targetValue),
          easingFunction(easingFunction) {}
     
+    ease(const ease& other) :
+        startTime(-1),
+        forwardDuration(other.forwardDuration),
+        backwardDuration(other.backwardDuration),
+        isGoingBackward(false),
+        startValue(other.startValue),
+        targetValue(other.targetValue),
+        easingFunction(other.easingFunction) {}
+    
     ~ease() {}
     
-    float update(ofxPm::TimeDiff currentTime) {
-        auto endTime = getEndTime();
-        if (currentTime < startTime) {
-            currentValue = startValue;
-        } else if (currentTime >= endTime) {
+    float update(TimeDiff currentTime) {
+        if (startTime < 0) {
+            startTime = currentTime;
+        }
+        
+        auto currentStartTime = getStartTime();
+        auto currentEndTime = getEndTime(currentStartTime);
+        auto currentStartValue = isGoingBackward ? targetValue : startValue;
+        auto currentTargetValue = isGoingBackward ? startValue : targetValue;
+        if (currentTime < currentStartTime) {
+            currentValue = currentStartValue;
+        } else if (currentTime >= currentEndTime) {
             if (backwardDuration > 0 && !isGoingBackward) {
                 isGoingBackward = true;
-                startTime = currentTime;
-                float temp = startValue;
-                startValue = targetValue;
-                targetValue = temp;
             } else {
-                currentValue = targetValue;
+                currentValue = currentTargetValue;
             }
         } else {
-            currentValue = ofxeasing::map(currentTime, startTime, endTime, startValue, targetValue, easingFunction);
+            currentValue = ofxeasing::map(currentTime, currentStartTime, currentEndTime, currentStartValue, currentTargetValue, easingFunction);
         }
         
         return currentValue;
@@ -54,24 +66,28 @@ public:
         return isGoingBackward ? backwardDuration : forwardDuration;
     }
     
-    TimeDiff getEndTime() {
-        return startTime + getDuration();
+    TimeDiff getStartTime() {
+        return isGoingBackward ? startTime + forwardDuration : startTime;
     }
     
+    TimeDiff getEndTime(float startTime) {
+        return isGoingBackward ? startTime + backwardDuration : startTime + forwardDuration;
+    }
+
     bool isPlaying() {
         return startValue < currentValue && currentValue < targetValue;
     }
     
     bool isDone(TimeDiff currentTime) {
-        return currentTime > getEndTime();
+        return currentTime > getEndTime(getStartTime());
     }
     
 private:
     bool isGoingBackward;
     float currentValue;
+    float startValue;
     float targetValue;
     TimeDiff startTime;
-    TimeDiff startValue;
     TimeDiff forwardDuration;
     TimeDiff backwardDuration;
     ofxeasing::function easingFunction;

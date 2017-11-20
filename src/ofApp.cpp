@@ -4,8 +4,9 @@
 void ofApp::setup(){
     ofSetVerticalSync(true);
     ofEnableAlphaBlending();
-    playModes.setup();
+    playModes.setup(60);
     setupMidiFighterTwister();
+    nextJumpRope = ofGetElapsedTimef() + 5;
 }
 
 void ofApp::setupMidiFighterTwister() {
@@ -20,6 +21,8 @@ void ofApp::onEncoderUpdate(ofxMidiFighterTwister::EncoderEventArgs& a){
     if (a.ID == 0) {
         auto delayPercent = ofMap(a.value, 0, 127, 0, 1);
         playModes.setDelayPercent(delayPercent);
+    } else if (a.ID == 1) {
+        playModes.setBeatsPerMinute(ofMap(a.value, 0, 127, 0, 300));
     }
 }
 
@@ -38,6 +41,10 @@ void ofApp::onSideButtonPressed(ofxMidiFighterTwister::SideButtonEventArgs & a){
 void ofApp::update() {
     ofSetWindowTitle(ofToString(ofGetFrameRate()));
     playModes.update();
+    float currentTimeSeconds = ofGetElapsedTimef();
+    if (currentTimeSeconds > nextJumpRope) {
+        nextJumpRope = currentTimeSeconds + 5;
+    }
 }
 
 //--------------------------------------------------------------
@@ -63,7 +70,7 @@ void ofApp::keyReleased(int key) {
 }
 
 //--------------------------------------------------------------
-void ofApp::mouseMoved(int x, int y ) {
+void ofApp::mouseMoved(int x, int y) {
     if (playModes.isPaused() && false) {
         playModes.setDelayPercent(float(x)/float(ofGetWidth()));
     }

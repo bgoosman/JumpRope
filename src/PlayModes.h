@@ -18,14 +18,15 @@
 #include "BasicVideoRenderer.h"
 #include "ease.h"
 
-#define NUM_FRAMES 126
+#define NUM_FRAMES 300
 #define NUM_BUFFERS 1
 
 class PlayModes {
 public:
-    void setup();
+    void setup(float beatsPerMinute);
     void update();
     void draw();
+    void setBeatsPerMinute(float bpm);
     void setFps(int _fps);
     void setDelay(float _delay);
     void setDelayPercent(float delay);
@@ -44,6 +45,7 @@ public:
     int fps;
     int delay;
     int currentBuffer;
+    float beatsPerMinute;
     float speed;
     ease* easings[NUM_BUFFERS];
 };
