@@ -6,7 +6,7 @@ void ofApp::setup(){
     ofEnableAlphaBlending();
     playModes.setup(60);
     setupMidiFighterTwister();
-    nextJumpRope = ofGetElapsedTimef() + 5;
+    nextJumpRope = ofGetElapsedTimef() + 2;
 }
 
 void ofApp::setupMidiFighterTwister() {
@@ -41,10 +41,6 @@ void ofApp::onSideButtonPressed(ofxMidiFighterTwister::SideButtonEventArgs & a){
 void ofApp::update() {
     ofSetWindowTitle(ofToString(ofGetFrameRate()));
     playModes.update();
-    float currentTimeSeconds = ofGetElapsedTimef();
-    if (currentTimeSeconds > nextJumpRope) {
-        nextJumpRope = currentTimeSeconds + 5;
-    }
 }
 
 //--------------------------------------------------------------
@@ -59,22 +55,13 @@ void ofApp::keyPressed(int key) {
 
 //--------------------------------------------------------------
 void ofApp::keyReleased(int key) {
-    if (key == 'r') {
-        playModes.reverse();
-    } else if (key == ' ') {
-        playModes.setDelayPercent(0);
-        playModes.togglePlay();
-    } else if (key == 'j' && playModes.isPaused()) {
-        playModes.jumpRope(0);
+    if (key == ' ') {
+        playModes.startMeasure(0);
     }
 }
 
 //--------------------------------------------------------------
-void ofApp::mouseMoved(int x, int y) {
-    if (playModes.isPaused() && false) {
-        playModes.setDelayPercent(float(x)/float(ofGetWidth()));
-    }
-}
+void ofApp::mouseMoved(int x, int y) { }
 
 //--------------------------------------------------------------
 void ofApp::mouseDragged(int x, int y, int button) {

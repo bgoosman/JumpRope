@@ -19,33 +19,42 @@
 #include "ease.h"
 
 #define NUM_FRAMES 300
-#define NUM_BUFFERS 1
+#define NUM_BUFFERS 2
+#define MAX_JUMP_ROPES 4
 
 class PlayModes {
 public:
     void setup(float beatsPerMinute);
     void update();
     void draw();
+    void jumpRope(int buffer);
     void setBeatsPerMinute(float bpm);
-    void setFps(int _fps);
+    void setCurrentBuffer(int index);
     void setDelay(float _delay);
     void setDelayPercent(float delay);
-    void reverse();
-    void togglePlay();
-    bool isPaused();
-    void jumpRope(int buffer);
+    void setFps(int _fps);
+    void toggleRecording();
+    void toggleRecording(int index);
+    bool isRecording(int index);
+    void pauseRecording(int index);
+    void resumeRecording(int index);
+    void startMeasure(int index);
+    void updateCurrentHeader(TimeDiff timeMicros);
     ofxPm::VideoBuffer& getCurrentBuffer();
     ofxPm::VideoHeader& getCurrentHeader();
+    void freeEasing(int index);
 
     ofxPm::VideoGrabber grabber;
     ofxPm::VideoBuffer buffers[NUM_BUFFERS];
     ofxPm::VideoHeader headers[NUM_BUFFERS];
     ofxPm::BasicVideoRenderer renderer;
     ofxPm::VideoRate rate;
-    int fps;
-    int delay;
+    ease* easings[NUM_BUFFERS];
     int currentBuffer;
+    int delay;
+    int fps;
+    int jumpRopeCount;
+    int nextBuffer;
     float beatsPerMinute;
     float speed;
-    ease* easings[NUM_BUFFERS];
 };

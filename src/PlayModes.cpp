@@ -15,40 +15,50 @@ void PlayModes::setup(float bpm) {
     delay = 0;
     speed = 1.0;
     currentBuffer = 0;
+    jumpRopeCount = 0;
+    nextBuffer = 1;
     
     float width = 1280;
     float height = width / (1920.0/1080.0);
+    grabber.setDeviceID(2);
 	grabber.initGrabber(width, height);
 	rate.setup(grabber, fps);
 
     for (int i = 0; i < NUM_BUFFERS; i++) {
+        bool const allocateOnSetup = true;
         auto& buffer = buffers[i];
-        buffer.setup(rate, NUM_FRAMES, true);
+        buffer.setup(rate, NUM_FRAMES, allocateOnSetup);
 
         auto& header = headers[i];
         header.setup(buffer);
         header.setDelayMs(0);
     }
     
-	renderer.setup(getCurrentHeader());
+	renderer.setup(headers[0]);
 }
 
-bool PlayModes::isPaused() {
-    return getCurrentBuffer().isStopped();
+bool PlayModes::isRecording(int index) {
+    return !buffers[index].isStopped();
 }
 
-void PlayModes::togglePlay() {
-    auto& buffer = getCurrentBuffer();
-    if (buffer.isStopped()) {
-        buffer.resume();
+void PlayModes::toggleRecording() {
+    toggleRecording(currentBuffer);
+}
+
+void PlayModes::toggleRecording(int index) {
+    if (isRecording(index)) {
+        resumeRecording(index);
     } else {
-        buffer.stop();
+        pauseRecording(index);
     }
 }
 
-void PlayModes::reverse() {
-    speed *= -1;
-    getCurrentHeader().setSpeed(speed);
+void PlayModes::pauseRecording(int index) {
+    buffers[index].stop();
+}
+
+void PlayModes::resumeRecording(int index) {
+    buffers[index].resume();
 }
 
 void PlayModes::setBeatsPerMinute(float bpm) {
@@ -62,7 +72,6 @@ void PlayModes::setFps(int _fps){
 
 void PlayModes::setDelayPercent(float pct) {
     headers[0].setDelayPct(pct);
-//    getCurrentHeader().setDelayPct(pct);
 }
 
 void PlayModes::setDelay(float _delay){
@@ -79,8 +88,9 @@ ofxPm::VideoHeader& PlayModes::getCurrentHeader() {
 }
 
 void PlayModes::jumpRope(int bufferIndex) {
+    jumpRopeCount += 1;
+    auto& buffer = buffers[bufferIndex];
     float startTime = ofGetElapsedTimeMicros();
-    auto& buffer = getCurrentBuffer();
     TimeDiff const microsPerSecond = 1e6;
     float const jumpRopeDurationInBeats = 2;
     float const beatsPerSecond = beatsPerMinute / 60.0;
@@ -90,34 +100,58 @@ void PlayModes::jumpRope(int bufferIndex) {
     TimeDiff forwardDuration = bufferDurationInSeconds / 2.0 * microsPerSecond;
     TimeDiff backwardDuration = bufferDurationInSeconds / 3.0 * microsPerSecond;
     float targetDelayPercent = bufferDurationInSeconds / bufferDuration;
-    std::cout << "Tweening " << bufferIndex << " delay from 0 to 1 between t = [" << startTime << ", " << startTime + forwardDuration << "]" << " and from 1 to 0 between t = [" << startTime + forwardDuration << ", " << startTime + forwardDuration + backwardDuration << "]" << std::endl;
+    std::cout << "Tweening " << bufferIndex << " delay from 0 to " << targetDelayPercent << " between t = [" << startTime << ", " << startTime + forwardDuration << "]" << " and from " << targetDelayPercent << " to 0 between t = [" << startTime + forwardDuration << ", " << startTime + forwardDuration + backwardDuration << "]" << std::endl;
     easings[bufferIndex] = new ease(forwardDuration, backwardDuration, 0, targetDelayPercent, ofxeasing::linear::easeIn);
 }
 
 void PlayModes::update() {
     TimeDiff timeMicros = ofGetElapsedTimeMicros();
-    if (!isPaused()) {
-        grabber.update();
+    grabber.update();
+    updateCurrentHeader(timeMicros);
+}
+
+void PlayModes::setCurrentBuffer(int index) {
+    currentBuffer = index;
+}
+
+void PlayModes::startMeasure(int index) {
+    if (index != currentBuffer) {
+        resumeRecording(currentBuffer);
+        currentBuffer = index;
     }
-    for (int i = 0; i < NUM_BUFFERS; i++) {
-        auto easing = easings[i];
-        if (easing != nullptr) {
-            float currentValue = easing->update(timeMicros);
-            headers[i].setDelayPct(currentValue);
-            if (easing->isDone(timeMicros)) {
-                delete easings[i];
-                easings[i] = nullptr;
-                if (isPaused())
-                    jumpRope(i);
+    
+    renderer.setup(headers[currentBuffer]);
+    jumpRopeCount = 0;
+    nextBuffer = (currentBuffer + 1) % NUM_BUFFERS;
+    buffers[currentBuffer].stop();
+    jumpRope(currentBuffer);
+}
+
+void PlayModes::updateCurrentHeader(TimeDiff timeMicros) {
+    auto easing = easings[currentBuffer];
+    if (easing != nullptr) {
+        float currentValue = easing->update(timeMicros);
+        headers[currentBuffer].setDelayPct(currentValue);
+        if (easing->isDone(timeMicros)) {
+            freeEasing(currentBuffer);
+            if (jumpRopeCount > MAX_JUMP_ROPES) {
+                startMeasure(nextBuffer);
+            } else {
+                jumpRope(currentBuffer);
             }
         }
     }
 }
 
+void PlayModes::freeEasing(int index) {
+    delete easings[index];
+    easings[index] = nullptr;
+}
+
 void PlayModes::draw() {
-	getCurrentBuffer().draw();
-	getCurrentHeader().draw();
-	renderer.draw(0, 0, ofGetWidth(), ofGetHeight());
+    buffers[currentBuffer].draw();
+    headers[currentBuffer].draw();
+    renderer.draw();
     auto& buffer = getCurrentBuffer();
     std::string realFps = "Real FPS = " + ofToString(buffer.getRealFPS());
     ofDrawBitmapString(realFps, 15, ofGetHeight() - 15);
