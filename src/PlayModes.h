@@ -15,20 +15,22 @@
 #include "VideoGrabber.h"
 #include "VideoRenderer.h"
 #include "VideoRate.h"
+#include "VideoFormat.h"
 #include "BasicVideoRenderer.h"
-#include "ease.h"
+#include "ofxSyphon.h"
+#include "ofxBenG.h"
 
-#define NUM_FRAMES 300
-#define NUM_BUFFERS 2
-#define MAX_JUMP_ROPES 4
+#define bufferSize 180
+#define bufferCount 3
+#define boomerangsPerMeasure 2
 
 class PlayModes {
 public:
-    void setup(float beatsPerMinute);
+    PlayModes();
+    ~PlayModes();
+    void setup();
     void update();
     void draw();
-    void jumpRope(int buffer);
-    void setBeatsPerMinute(float bpm);
     void setCurrentBuffer(int index);
     void setDelay(float _delay);
     void setDelayPercent(float delay);
@@ -38,23 +40,30 @@ public:
     bool isRecording(int index);
     void pauseRecording(int index);
     void resumeRecording(int index);
-    void startMeasure(int index);
-    void updateCurrentHeader(TimeDiff timeMicros);
+    void setForwardRatio(float value);
+    void setBackwardRatio(float value);
     ofxPm::VideoBuffer& getCurrentBuffer();
     ofxPm::VideoHeader& getCurrentHeader();
-    void freeEasing(int index);
+    ofTexture& getBufferTexture(int index);
+    float getBufferDuration(int index);
+    float getVideoWidth();
+    float getVideoHeight();
+    int getBufferCount();
+    void setDelayPercent(int index, float percent);
 
+    std::map<ofxPm::VideoFormat, std::vector<ofPtr<ofxPm::VideoFrame::Obj>>>* pool;
     ofxPm::VideoGrabber grabber;
-    ofxPm::VideoBuffer buffers[NUM_BUFFERS];
-    ofxPm::VideoHeader headers[NUM_BUFFERS];
-    ofxPm::BasicVideoRenderer renderer;
+    ofxPm::VideoBuffer buffers[bufferCount];
+    ofxPm::VideoHeader headers[bufferCount];
+    ofxPm::BasicVideoRenderer renderers[bufferCount];
     ofxPm::VideoRate rate;
-    ease* easings[NUM_BUFFERS];
+
+    float videoWidth, videoHeight;
+    float beatsPerMinute;
+    float forwardRatio;
+    float backwardRatio;
+    float speed;
     int currentBuffer;
     int delay;
     int fps;
-    int jumpRopeCount;
-    int nextBuffer;
-    float beatsPerMinute;
-    float speed;
 };
