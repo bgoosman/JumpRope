@@ -12,9 +12,11 @@ void ofApp::setup() {
     setupMidiFighterTwister();
     currentBuffer = 0;
     for (int i = 0; i < playModes.getBufferCount(); i++) {
+        easings[i] = nullptr;
         boomerangCount[i] = -1;
         std::string name = "buffer" + ofToString(i);
         syphon[i].setName(name);
+        continueRecordingOnBeat[i] = -1;
     }
 }
 
@@ -141,33 +143,46 @@ void ofApp::update() {
         startMeasureOnBeat = -1;
     }
     
-    if (continueRecordingOnBeat > 0 && ableton.getBeat() == continueRecordingOnBeat) {
-        std::cout << "continueRecordingOnBeat == " << continueRecordingOnBeat << std::endl;
-        freeEasing(lastBuffer);
-        playModes.setDelayPercent(lastBuffer, 0);
-        playModes.resumeRecording(lastBuffer);
-        continueRecordingOnBeat = -1;
+    for (int i = 0; i < playModes.getBufferCount(); i++) {
+        auto recordOnBeat = continueRecordingOnBeat[i];
+        if (recordOnBeat > 0) {
+            if (ableton.getBeat() == recordOnBeat) {
+                std::cout << "recordOnBeat == " << recordOnBeat << std::endl;
+                freeEasing(i);
+                playModes.setDelayPercent(i, 0);
+                playModes.resumeRecording(i);
+                continueRecordingOnBeat[i] = -1;
+            }
+            if (recordOnBeat > 4 && ableton.getBeat() == 4) {
+                continueRecordingOnBeat[i] = recordOnBeat - 4;
+            }
+        }
     }
                          
     playModes.update();
 }
 
 void ofApp::draw() {
+    ofBackground(0);
     playModes.draw();
     
     for (int i = 0; i < playModes.getBufferCount(); i++) {
         syphon[i].publishTexture(&playModes.getBufferTexture(i));
     }
     
-    float top = ofGetHeight();
-    std::string forwardRatioString = "forwardRatio = " + ofToString(forwardRatio);
-    ofDrawBitmapString(forwardRatioString, 15, top-15);
-    std::string backwardRatioString = "backwardRatio = " + ofToString(backwardRatio);
-    ofDrawBitmapString(backwardRatioString, 15, top-35);
-    std::string beatsPerBoomerangString = "beatsPerBoomerang = " + ofToString(beatsPerBoomerang);
-    ofDrawBitmapString(beatsPerBoomerangString, 15, top-55);
-    std::string beat = "beat = " + ofToString(ableton.getBeat());
-    ofDrawBitmapString(beat, 15, top-75);
+    if (!inFullscreen) {
+        float top = ofGetHeight();
+        std::string forwardRatioString = "forwardRatio = " + ofToString(forwardRatio);
+        ofDrawBitmapString(forwardRatioString, 15, top-15);
+        std::string backwardRatioString = "backwardRatio = " + ofToString(backwardRatio);
+        ofDrawBitmapString(backwardRatioString, 15, top-35);
+        std::string beatsPerBoomerangString = "beatsPerBoomerang = " + ofToString(beatsPerBoomerang);
+        ofDrawBitmapString(beatsPerBoomerangString, 15, top-55);
+        std::string beat = "beat = " + ofToString(ableton.getBeat());
+        ofDrawBitmapString(beat, 15, top-75);
+        std::string bpm = "bpm = " + ofToString(ableton.getTempo());
+        ofDrawBitmapString(bpm, 15, top-95);
+    }
 }
 
 void ofApp::fadeToBuffer(int buffer) {
@@ -223,10 +238,10 @@ void ofApp::boomerang(int index) {
 void ofApp::startMeasure(int index) {
     std::cout << "starting measure on " << index << std::endl;
     if (index != currentBuffer) {
+        continueRecordingOnBeat[currentBuffer] = 1;
         fadeToBuffer(index);
         lastBuffer = currentBuffer;
         currentBuffer = index;
-        continueRecordingOnBeat = 2;
     }
     
     playModes.pauseRecording(index);
@@ -250,6 +265,7 @@ void ofApp::keyReleased(int key) {
         scheduleMeasureOnBeat(1, currentBuffer);
     } else if (key == 'f') {
         ofToggleFullscreen();
+        inFullscreen = !inFullscreen;
     }
 }
 

@@ -40,13 +40,12 @@ public:
     int boomerangCount[bufferCount];
     int startMeasureOnBeat = -1;
     int startMeasureOnBuffer = -1;
-    int continueRecordingOnBeat = -1;
     int currentBuffer;
     int lastBuffer = 0;
 
     ofxBenG::ableton ableton;
     
-    ofxBenG::osc osc = {"192.168.0.107", 1234};
+    ofxBenG::osc osc = {"10.1.10.202", 1234};
     
     PlayModes playModes;
 
@@ -67,8 +66,11 @@ public:
     ofxBenG::property<float> delayPercent = {"delayPercent", 0, 0, 1};
     ofxBenG::property<float> forwardRatio = {"forwardRatio", 0.5, 0, 1};
     ofxBenG::property<float> backwardRatio = {"backwardRatio", 1.0/3.0, 0, 1};
-    ofxBenG::property<float> beatsPerBoomerang = {"beatsPerBoomerang", 4, 0, 12};
+    ofxBenG::property<int> beatsPerBoomerang = {"beatsPerBoomerang", 4, 0, 12};
     void setupProperties();
     void savePropertiesToXml(std::string& file);
     void loadPropertiesFromXml(std::string& file);
+    
+    bool inFullscreen = false;
+    int continueRecordingOnBeat[bufferCount];
 };

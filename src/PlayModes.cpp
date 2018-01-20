@@ -25,13 +25,21 @@ void PlayModes::setup() {
     speed = 1.0;
     currentBuffer = 0;
 
-    float width = 640;
+    float width = 1280;
     float height = width / (1920.0/1080.0);
-    grabber.listDevices();
-    grabber.setDeviceID(2);
+    std::vector<ofVideoDevice> grabbers = grabber.listDevices();
+    // Select the Logitech C920
+    for (ofVideoDevice& device : grabbers) {
+        if (device.deviceName.find("HD Pro Webcam C920") != std::string::npos) {
+            std::cout << "Found the C920" << std::endl;
+            grabber.setDeviceID(device.id);
+            break;
+        }
+    }
 	grabber.initGrabber(width, height);
     videoWidth = grabber.getWidth();
     videoHeight = grabber.getHeight();
+    std::cout << "videoWidth = " << videoWidth << ", videoHeight = " << videoHeight << std::endl;
 	rate.setup(grabber, fps);
 
     for (int i = 0; i < bufferCount; i++) {
@@ -136,11 +144,17 @@ void PlayModes::setDelayPercent(int index, float percent) {
 }
 
 void PlayModes::draw() {
-    auto videoWidth = ofGetWidth() / 3;
-    auto videoHeight = videoWidth * (grabber.getHeight() / grabber.getWidth());
+    auto columnWidth = ofGetWidth() / bufferCount;
+    auto columnHeight = ofGetHeight();
     auto x = 0.0;
-    for (int i = 0; i < bufferCount; i++, x += videoWidth) {
+    for (int i = 0; i < bufferCount; i++, x += columnWidth) {
+        auto thisColumnWidth = (videoWidth < columnWidth) ? videoWidth : columnWidth;
+        auto thisColumnHeight = (videoHeight < columnHeight) ? videoHeight : columnHeight;
+        auto cropX = (thisColumnWidth < videoWidth) ? videoWidth / 4.0f : 0.0f;
+        auto cropWidth = (thisColumnWidth < videoWidth) ? thisColumnWidth : videoWidth;
+        auto y = (videoHeight < ofGetHeight()) ? ofGetHeight() / 2.0f - thisColumnHeight / 2.0f : 0.0f;
         ofTexture& rendererTexture = getBufferTexture(i);
-        rendererTexture.draw(x, 0, videoWidth, videoHeight);
+        rendererTexture.drawSubsection(x, y, thisColumnWidth, thisColumnHeight, cropX, 0, thisColumnWidth, videoHeight);
+//        std::cout << videoWidth << " " << thisColumnWidth << " " << thisColumnHeight << " " << cropX << " " << y << " " << videoHeight << std::endl;
     }
 }
