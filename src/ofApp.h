@@ -4,7 +4,6 @@
 #include "ofxBenG.h"
 #include "ofxMidiFighterTwister.h"
 #include "ofxSyphon.h"
-#include "PlayModes.h"
 
 class ofApp : public ofBaseApp{
 public:
@@ -26,6 +25,7 @@ public:
     void dragEvent(ofDragInfo dragInfo);
     void gotMessage(ofMessage msg);
     
+    void drawVideo();
     void boomerang(int buffer);
     void updateBoomerangs(ofxBenG::TimeDiff timeMicros);
     void freeEasing(int index);
@@ -35,19 +35,20 @@ public:
     int getNextBuffer();
     
     void scheduleMeasureOnBeat(int beat, int index);
-    ofxSyphonServer syphon[bufferCount];
-    ofxBenG::ease* easings[bufferCount];
-    int boomerangCount[bufferCount];
+    ofxSyphonServer syphon[ofxBenG::PlayModes::bufferCount];
+    ofxBenG::ease* easings[ofxBenG::PlayModes::bufferCount];
+    int boomerangCount[ofxBenG::PlayModes::bufferCount];
     int startMeasureOnBeat = -1;
     int startMeasureOnBuffer = -1;
     int currentBuffer;
     int lastBuffer = 0;
+    int lastBeat = 0;
+    bool drawNewFrame = false;
+    ofTexture currentFrame;
 
     ofxBenG::ableton ableton;
-    
     ofxBenG::osc osc = {"10.1.10.202", 1234};
-    
-    PlayModes playModes;
+    ofxBenG::PlayModes playModes;
 
     ofxMidiFighterTwister twister;
     int const MAX_BANKS = 4;
@@ -62,7 +63,7 @@ public:
     ofxXmlSettings settings;
     std::string SETTINGS_FILE = "settings.xml";
     std::vector<ofxBenG::property_base*> properties;
-    ofxBenG::property<float> beatsPerMinute = {"beatsPerMinute", 60, 0, 300};
+    ofxBenG::property<float> beatsPerMinute = {"beatsPerMinute", 60, 0, 480};
     ofxBenG::property<float> delayPercent = {"delayPercent", 0, 0, 1};
     ofxBenG::property<float> forwardRatio = {"forwardRatio", 0.5, 0, 1};
     ofxBenG::property<float> backwardRatio = {"backwardRatio", 1.0/3.0, 0, 1};
@@ -72,5 +73,5 @@ public:
     void loadPropertiesFromXml(std::string& file);
     
     bool inFullscreen = false;
-    int continueRecordingOnBeat[bufferCount];
+    int continueRecordingOnBeat[ofxBenG::PlayModes::bufferCount];
 };

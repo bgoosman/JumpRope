@@ -3,14 +3,22 @@
 void ofApp::setup() {
     ofSetVerticalSync(true);
     ofEnableAlphaBlending();
+    
     ableton.setupLink(beatsPerMinute);
-    playModes.setup();
+    
+    float const width = 1280;
+    float const height = width / (1920.0/1080.0);
+    playModes.setup("HD Pro Webcam C920", width, height);
+    ofSetWindowShape(playModes.getVideoWidth(), playModes.getVideoHeight());
+
     forwardRatio = 0.5;
     backwardRatio = 0.33;
     beatsPerBoomerang = 4;
-    ofSetWindowShape(playModes.getVideoWidth(), playModes.getVideoHeight());
-    setupMidiFighterTwister();
     currentBuffer = 0;
+    
+    setupMidiFighterTwister();
+    beatsPerMinute = 120;
+    
     for (int i = 0; i < playModes.getBufferCount(); i++) {
         easings[i] = nullptr;
         boomerangCount[i] = -1;
@@ -130,19 +138,26 @@ void ofApp::update() {
     for (auto& global : properties) {
         global->clean();
     }
+    playModes.update();
 
     ofSetWindowTitle(ofToString(ofGetFrameRate()));
 
     ofxBenG::TimeDiff timeMicros = ofGetElapsedTimeMicros();
-    updateBoomerangs(timeMicros);
     
+//    int currentBeat = ableton.getBeat();
+//    if (currentBeat != lastBeat) {
+//        drawNewFrame = true;
+//        lastBeat = currentBeat;
+//    }
+    updateBoomerangs(timeMicros);
+
     if (startMeasureOnBeat > 0 && ableton.getBeat() == startMeasureOnBeat && (isLastBoomerang(currentBuffer) || boomerangCount[currentBuffer] < 0)) {
         std::cout << "startMeasureOnBeat == " << startMeasureOnBeat << std::endl;
         startMeasure(startMeasureOnBuffer);
         startMeasureOnBuffer = -1;
         startMeasureOnBeat = -1;
     }
-    
+
     for (int i = 0; i < playModes.getBufferCount(); i++) {
         auto recordOnBeat = continueRecordingOnBeat[i];
         if (recordOnBeat > 0) {
@@ -158,14 +173,40 @@ void ofApp::update() {
             }
         }
     }
-                         
-    playModes.update();
+    
+}
+
+void ofApp::drawVideo() {
+    auto bufferCount = playModes.getBufferCount();
+    auto columnWidth = ofGetWidth() / bufferCount;
+    auto columnHeight = ofGetHeight();
+    auto videoWidth = playModes.getVideoWidth();
+    auto videoHeight = playModes.getVideoHeight();
+    auto x = 0.0;
+    for (int i = 0; i < bufferCount; i++, x += columnWidth) {
+        auto thisColumnWidth = (videoWidth < columnWidth) ? videoWidth : columnWidth;
+        auto thisColumnHeight = (videoHeight < columnHeight) ? videoHeight : columnHeight;
+        auto cropX = (thisColumnWidth < videoWidth) ? videoWidth / 3.0f : 0.0f;
+        auto cropWidth = (thisColumnWidth < videoWidth) ? thisColumnWidth : videoWidth;
+        auto y = (videoHeight < ofGetHeight()) ? ofGetHeight() / 2.0f - thisColumnHeight / 2.0f : 0.0f;
+        ofTexture& rendererTexture = playModes.getBufferTexture(i);
+        rendererTexture.drawSubsection(x, y, thisColumnWidth, thisColumnHeight, cropX, 0, thisColumnWidth, videoHeight);
+    }
 }
 
 void ofApp::draw() {
     ofBackground(0);
-    playModes.draw();
+//
+//    if (drawNewFrame) {
+//        drawNewFrame = false;
+//        currentFrame = playModes.getBufferTexture(0);
+//    }
+//    if (currentFrame.isAllocated()) {
+//        currentFrame.draw(0, 0);
+//    }
     
+    drawVideo();
+
     for (int i = 0; i < playModes.getBufferCount(); i++) {
         syphon[i].publishTexture(&playModes.getBufferTexture(i));
     }
@@ -250,7 +291,7 @@ void ofApp::startMeasure(int index) {
 }
 
 bool ofApp::isLastBoomerang(int index) {
-    return boomerangCount[index] == boomerangsPerMeasure;
+    return boomerangCount[index] == playModes.getBoomerangsPerMeasure();
 }
 
 void ofApp::freeEasing(int index) {

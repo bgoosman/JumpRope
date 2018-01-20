@@ -1,5 +1,6 @@
 ofxAbletonLink
 ofxBenG
+ofxBlackmagic
 ofxEasing
 ofxIntersection
 ofxMidi
